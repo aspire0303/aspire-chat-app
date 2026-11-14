@@ -14,12 +14,18 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
+      - name: Skip Android lint (not needed for the APK, and it crashes on some plugins)
+        run: |
+          mkdir -p ~/.gradle/init.d
+          printf '%s\n' 'allprojects {' '  tasks.configureEach { t ->' '    if (t.name.startsWith("lintVital")) { t.enabled = false }' '  }' '}' > ~/.gradle/init.d/skip-lint.gradle
+          cat ~/.gradle/init.d/skip-lint.gradle
 
       - name: Generate the Android project
         run: flutter create --platforms=android --org pk.aspire --project-name aspire_chat .
@@ -36,7 +42,6 @@ jobs:
           sed -i 's/android:label="[^"]*"/android:label="Aspire Chat"/' "$M"
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/; s/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' "$G"
           echo "--- applicationId / minSdk"; grep -n "applicationId\|minSdk" "$G" || true
-          echo "--- manifest"; head -12 "$M"
 
       - run: flutter pub get
 
