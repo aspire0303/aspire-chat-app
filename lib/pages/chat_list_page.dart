@@ -11,9 +11,10 @@ import 'broadcast_page.dart';
 import 'chat_page.dart';
 
 class ChatListPage extends StatefulWidget {
-  const ChatListPage({super.key, required this.me});
+  const ChatListPage({super.key, required this.me, this.initialTab = 0});
 
   final AppUser me;
+  final int initialTab;
 
   @override
   State<ChatListPage> createState() => _ChatListPageState();
@@ -142,6 +143,7 @@ class _ChatListPageState extends State<ChatListPage> {
   Widget build(BuildContext context) {
     final me = widget.me;
     return DefaultTabController(
+      initialIndex: widget.initialTab,
       length: 3,
       child: Scaffold(
         appBar: AppBar(

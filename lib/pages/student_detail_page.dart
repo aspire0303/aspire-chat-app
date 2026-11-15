@@ -18,12 +18,33 @@ class StudentDetailPage extends StatelessWidget {
     required this.studentId,
     required this.name,
     required this.subtitle,
+    this.section = 'all',
   });
 
   final AppUser me;
   final String studentId;
   final String name;
   final String subtitle;
+  final String section;
+
+  String get _title {
+    switch (section) {
+      case 'fee':
+        return 'Fee';
+      case 'attendance':
+        return 'Attendance';
+      case 'tests':
+        return 'Marks';
+      case 'results':
+        return 'Results';
+      case 'schedule':
+        return 'Date Sheet';
+      default:
+        return name;
+    }
+  }
+
+  bool _show(String s) => section == 'all' || section == s;
 
   bool get _canSeeFees => me.isAdmin || me.role == 'parent';
 
@@ -45,9 +66,13 @@ class StudentDetailPage extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+            Text(_title, maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-            if (subtitle.isNotEmpty)
+            if (section != 'all')
+              Text(subtitle.isEmpty ? name : '$name · $subtitle',
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400))
+            else if (subtitle.isNotEmpty)
               Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400)),
           ],
@@ -56,7 +81,8 @@ class StudentDetailPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          if (_canSeeFees) _FeeSection(studentId: studentId),
+          if (_canSeeFees && _show('fee')) _FeeSection(studentId: studentId),
+          if (section != 'fee')
           StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             stream: cards,
             builder: (context, snap) {
@@ -80,17 +106,22 @@ class StudentDetailPage extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _AttendanceCard(att: att),
-                  if (upcoming.isNotEmpty) _UpcomingCard(rows: upcoming),
-                  if (exams.isEmpty)
+                  if (_show('attendance')) _AttendanceCard(att: att),
+                  if (_show('schedule') && upcoming.isNotEmpty) _UpcomingCard(rows: upcoming),
+                  if (section == 'schedule' && upcoming.isEmpty)
+                    const _InfoBox('No upcoming exams are scheduled right now.'),
+                  if (_show('results') && exams.isEmpty)
                     const _CardShell(
                       title: 'Marks and results',
                       icon: Icons.grading,
                       color: Color(0xFFEC4899),
                       child: Text('No published results yet.'),
                     ),
-                  for (final e in exams) _ExamCard(exam: asMap(e)),
-                  if (tests.isNotEmpty) _TestsCard(tests: tests),
+                  if (_show('results'))
+                    for (final e in exams) _ExamCard(exam: asMap(e)),
+                  if (_show('tests') && tests.isNotEmpty) _TestsCard(tests: tests),
+                  if (section == 'tests' && tests.isEmpty)
+                    const _InfoBox('No class tests have been recorded yet.'),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
