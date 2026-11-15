@@ -4,13 +4,15 @@ import 'package:flutter/services.dart';
 
 import '../app_user.dart';
 import '../models.dart';
+import '../read_store.dart';
 import '../util.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, required this.me, required this.chat});
+  const ChatPage({super.key, required this.me, required this.chat, this.store});
 
   final AppUser me;
   final ChatInfo chat;
+  final ReadStore? store;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -29,9 +31,32 @@ class _ChatPageState extends State<ChatPage> {
   bool get _canWrite => !widget.chat.isAnnouncement || widget.me.isStaff;
 
   @override
+  void initState() {
+    super.initState();
+    widget.store?.markSeen(widget.chat.id);
+  }
+
+  @override
   void dispose() {
+    widget.store?.markSeen(widget.chat.id);
     _text.dispose();
     super.dispose();
+  }
+
+  String _infoText() {
+    final c = widget.chat;
+    final meIsFirst = c.members.isNotEmpty && c.members.first == widget.me.uid;
+    if (c.isAnnouncement) {
+      return widget.me.isStaff
+          ? 'Announcements. Every parent in this group can read your posts. Parents cannot reply here; they reply in their School Office or teacher chat.'
+          : 'School announcements. To reply, use your School Office or teacher chat.';
+    }
+    if (c.kind == 'office') {
+      return meIsFirst
+          ? 'Private chat with the school office. Only you, the owner and the admin can see these messages.'
+          : 'Private chat with this parent. The parent, the owner and the admin can see these messages.';
+    }
+    return 'Private chat between this teacher and the parent.';
   }
 
   void _toast(String m) {
@@ -149,6 +174,12 @@ class _ChatPageState extends State<ChatPage> {
       ),
       body: Column(
         children: [
+          Container(
+            width: double.infinity,
+            color: const Color(0xFFFFF6DD),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            child: Text(_infoText(), style: const TextStyle(fontSize: 12, color: Colors.black87)),
+          ),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: query.snapshots(),
@@ -166,7 +197,10 @@ class _ChatPageState extends State<ChatPage> {
                 }
                 final docs = snap.data!.docs;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) _markRead(docs);
+                  if (mounted) {
+                    _markRead(docs);
+                    widget.store?.markSeen(widget.chat.id);
+                  }
                 });
                 final visible = docs.where((d) {
                   final del = List<String>.from((d.data()['deletedFor'] as List?) ?? const []);

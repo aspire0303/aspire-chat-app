@@ -12,6 +12,7 @@ class ChatInfo {
     required this.lastText,
     required this.lastAt,
     required this.lastSender,
+    required this.members,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class ChatInfo {
   final String lastText;
   final DateTime? lastAt;
   final String lastSender;
+  final List<String> members;
 
   bool get isAnnouncement => type == 'announcement';
 
@@ -38,7 +40,10 @@ class ChatInfo {
       if (members.isNotEmpty && members.first != me.uid) {
         final n = nameOf(members.first);
         title = n.isEmpty ? 'Parent' : n;
-        subtitle = 'School Office';
+        if (subtitle.isEmpty) subtitle = 'School Office chat';
+      } else {
+        title = 'School Office';
+        subtitle = 'Fees, results, attendance and any questions';
       }
     } else if (kind == 'teacher' && members.length >= 2) {
       if (me.uid == members[0]) {
@@ -62,6 +67,7 @@ class ChatInfo {
       lastText: (d['lastText'] as String?) ?? '',
       lastAt: ts is Timestamp ? ts.toDate() : null,
       lastSender: (d['lastSender'] as String?) ?? '',
+      members: members,
     );
   }
 }
