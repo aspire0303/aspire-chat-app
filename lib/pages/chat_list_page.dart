@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_user.dart';
 import '../auth_service.dart';
+import '../change_password.dart';
 import '../models.dart';
 import '../read_store.dart';
 import '../util.dart';
@@ -151,8 +152,10 @@ class _ChatListPageState extends State<ChatListPage> {
             PopupMenuButton<String>(
               onSelected: (v) {
                 if (v == 'logout') AuthService.signOut();
+                if (v == 'password') showChangePasswordDialog(context);
               },
               itemBuilder: (_) => const [
+                PopupMenuItem<String>(value: 'password', child: Text('Change password')),
                 PopupMenuItem<String>(value: 'logout', child: Text('Sign out')),
               ],
             ),
