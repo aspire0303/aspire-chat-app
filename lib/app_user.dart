@@ -5,6 +5,7 @@ class AppUser {
     required this.role,
     required this.mobile,
     required this.active,
+    this.classIds = const <String>[],
   });
 
   final String uid;
@@ -12,6 +13,7 @@ class AppUser {
   final String role;
   final String mobile;
   final bool active;
+  final List<String> classIds;
 
   bool get isAdmin => role == 'owner' || role == 'admin';
   bool get isStaff => role == 'owner' || role == 'admin' || role == 'teacher';
@@ -36,6 +38,7 @@ class AppUser {
       role: (d['role'] as String?) ?? 'parent',
       mobile: (d['mobile'] as String?) ?? '',
       active: d['active'] != false,
+      classIds: List<String>.from((d['classIds'] as List?) ?? const <dynamic>[]),
     );
   }
 }

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'app_user.dart';
 import 'auth_service.dart';
 import 'firebase_config.dart';
-import 'pages/chat_list_page.dart';
+import 'pages/home_shell.dart';
 import 'pages/login_page.dart';
 
 Future<void> main() async {
@@ -85,7 +85,7 @@ class ProfileGate extends StatelessWidget {
             message: 'This account is not active. Please contact the school office.',
           );
         }
-        return ChatListPage(me: me);
+        return HomeShell(me: me);
       },
     );
   }
