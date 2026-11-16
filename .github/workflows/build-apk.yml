@@ -50,8 +50,8 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "No signing key secrets found. This build uses a temporary key."
-            exit 0
+            echo "No signing key secrets found. Add the four signing secrets. Build stopped."
+            exit 1
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/aspire-release.jks"
           echo "SIGN_KEYSTORE_PATH=$RUNNER_TEMP/aspire-release.jks" >> "$GITHUB_ENV"
@@ -62,15 +62,22 @@ jobs:
 
       - name: Apply the signing key to the Android project
         run: |
-          if [ -z "$SIGN_KEYSTORE_PATH" ]; then echo "Skipped (temporary key)."; exit 0; fi
+          if [ -z "$SIGN_KEYSTORE_PATH" ]; then echo "Signing key missing."; exit 1; fi
           python3 ci/apply_signing.py
 
       - run: flutter pub get
 
       - run: flutter build apk --release
 
-      - name: Show which key signed the APK
-        run: keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep -E "Owner|SHA256" || true
+      - name: Verify the APK is signed with the permanent key
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          EXPECTED=$(keytool -list -v -keystore "$SIGN_KEYSTORE_PATH" -storepass "$SIGN_STORE_PASSWORD" -alias "$SIGN_KEY_ALIAS" | grep "SHA256:" | head -1 | awk '{print $2}')
+          ACTUAL=$(keytool -printcert -jarfile "$APK" | grep "SHA256:" | head -1 | awk '{print $2}')
+          echo "Keystore SHA256: $EXPECTED"
+          echo "APK SHA256:      $ACTUAL"
+          if [ -z "$EXPECTED" ] || [ "$EXPECTED" != "$ACTUAL" ]; then echo "APK is NOT signed with the permanent key."; exit 1; fi
+          echo "OK: signed with the permanent key."
 
       - uses: actions/upload-artifact@v4
         with:
