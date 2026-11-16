@@ -1,0 +1,28 @@
+name: Create signing key (run once)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Generate the keystore and its passwords
+        run: |
+          set -e
+          PW=$(openssl rand -hex 16)
+          mkdir out
+          keytool -genkeypair -keystore out/aspire-release.jks -storetype PKCS12 -alias aspire -keyalg RSA -keysize 2048 -validity 10950 -storepass "$PW" -keypass "$PW" -dname "CN=The Aspire School, O=The Aspire School, C=PK"
+          printf 'KEYSTORE_PASSWORD=%s\nKEY_ALIAS=aspire\nKEY_PASSWORD=%s\n' "$PW" "$PW" > out/keystore-info.txt
+          ls -l out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signing-key
+          path: out/
+          retention-days: 1

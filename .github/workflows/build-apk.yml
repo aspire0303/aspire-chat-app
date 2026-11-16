@@ -25,7 +25,6 @@ jobs:
         run: |
           mkdir -p ~/.gradle/init.d
           printf '%s\n' 'allprojects {' '  tasks.configureEach { t ->' '    if (t.name.startsWith("lintVital")) { t.enabled = false }' '  }' '}' > ~/.gradle/init.d/skip-lint.gradle
-          cat ~/.gradle/init.d/skip-lint.gradle
 
       - name: Generate the Android project
         run: flutter create --platforms=android --org pk.aspire --project-name aspire_chat .
@@ -43,9 +42,35 @@ jobs:
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/; s/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' "$G"
           echo "--- applicationId / minSdk"; grep -n "applicationId\|minSdk" "$G" || true
 
+      - name: Prepare the permanent signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No signing key secrets found. This build uses a temporary key."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/aspire-release.jks"
+          echo "SIGN_KEYSTORE_PATH=$RUNNER_TEMP/aspire-release.jks" >> "$GITHUB_ENV"
+          echo "SIGN_STORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "SIGN_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "SIGN_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+          keytool -list -keystore "$RUNNER_TEMP/aspire-release.jks" -storepass "$STORE_PASSWORD" | head -6
+
+      - name: Apply the signing key to the Android project
+        run: |
+          if [ -z "$SIGN_KEYSTORE_PATH" ]; then echo "Skipped (temporary key)."; exit 0; fi
+          python3 ci/apply_signing.py
+
       - run: flutter pub get
 
       - run: flutter build apk --release
+
+      - name: Show which key signed the APK
+        run: keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep -E "Owner|SHA256" || true
 
       - uses: actions/upload-artifact@v4
         with:
