@@ -49,6 +49,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          echo "Secret check (lengths only): KEYSTORE_BASE64=${#KEYSTORE_BASE64} KEYSTORE_PASSWORD=${#STORE_PASSWORD} KEY_ALIAS=${#KEY_ALIAS} KEY_PASSWORD=${#KEY_PASSWORD}"
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "No signing key secrets found. Add the four signing secrets. Build stopped."
             exit 1
