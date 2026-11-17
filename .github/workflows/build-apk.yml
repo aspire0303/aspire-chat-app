@@ -73,8 +73,11 @@ jobs:
       - name: Verify the APK is signed with the permanent key
         run: |
           APK=build/app/outputs/flutter-apk/app-release.apk
-          EXPECTED=$(keytool -list -v -keystore "$SIGN_KEYSTORE_PATH" -storepass "$SIGN_STORE_PASSWORD" -alias "$SIGN_KEY_ALIAS" | grep "SHA256:" | head -1 | awk '{print $2}')
-          ACTUAL=$(keytool -printcert -jarfile "$APK" | grep "SHA256:" | head -1 | awk '{print $2}')
+          ls -l "$APK"
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify -v --print-certs "$APK" | head -15 || true
+          EXPECTED=$(keytool -list -v -keystore "$SIGN_KEYSTORE_PATH" -storepass "$SIGN_STORE_PASSWORD" -alias "$SIGN_KEY_ALIAS" | grep "SHA256:" | head -1 | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" | grep -i "certificate SHA-256 digest" | head -1 | awk '{print $NF}')
           echo "Keystore SHA256: $EXPECTED"
           echo "APK SHA256:      $ACTUAL"
           if [ -z "$EXPECTED" ] || [ "$EXPECTED" != "$ACTUAL" ]; then echo "APK is NOT signed with the permanent key."; exit 1; fi
