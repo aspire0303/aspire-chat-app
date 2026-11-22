@@ -8,6 +8,7 @@ import 'auth_service.dart';
 import 'firebase_config.dart';
 import 'pages/home_shell.dart';
 import 'pages/login_page.dart';
+import 'erp/root_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,7 @@ class AspireChatApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0F766E)),
         scaffoldBackgroundColor: const Color(0xFFEFF3F4),
       ),
-      home: const AuthGate(),
+      home: const RootRouter(),
     );
   }
 }
