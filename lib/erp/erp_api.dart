@@ -28,6 +28,13 @@ class ErpSession {
   final String campusName;
 }
 
+class LoginResult {
+  const LoginResult({this.session, this.campuses = const []});
+  final ErpSession? session;
+  final List<Map<String, dynamic>> campuses;
+  bool get needsCampus => session == null;
+}
+
 class ErpApi {
   static const _kToken = 'erp_token';
   static const _kName = 'erp_name';
@@ -118,6 +125,29 @@ class ErpApi {
     } catch (_) {
       throw ErpException(_unreachable);
     }
+  }
+
+  // One sign-in for everybody: the server decides the role.
+  static Future<LoginResult> login({required String id, required String password, String? campusId}) async {
+    final body = await _post('/api/mobile/login', {
+      'id': id.trim(),
+      'password': password,
+      if (campusId != null && campusId.isNotEmpty) 'campus': campusId,
+    });
+    if (body['needCampus'] == true) {
+      final list = ((body['campuses'] as List?) ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return LoginResult(campuses: list);
+    }
+    final user = (body['user'] as Map?) ?? {};
+    final s = ErpSession(
+      token: '${body['token']}',
+      role: '${user['role'] ?? 'TEACHER'}',
+      name: '${user['name'] ?? ''}',
+      campusId: '${user['campusId'] ?? ''}',
+      campusName: '${user['campusName'] ?? ''}',
+    );
+    await _save(s);
+    return LoginResult(session: s);
   }
 
   static Future<ErpSession> staffLogin({required String email, required String password, required String campusId}) async {

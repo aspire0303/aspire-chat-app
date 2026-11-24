@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../main.dart' show AuthGate;
 import 'erp_api.dart';
+import 'erp_login.dart';
 import 'owner_dashboard.dart';
+import 'parent_home.dart';
+import 'role_placeholder.dart';
+import 'teacher_home.dart';
 
-// Temporary entry point: keeps the existing chat app as it is and adds an
-// "Owner Dashboard" button that opens the ERP-backed dashboard.
+// Front door of the app: the ERP sign-in decides which screen opens.
+// The old chat is still reachable from every screen.
 class RootRouter extends StatefulWidget {
   const RootRouter({super.key});
 
@@ -14,35 +18,34 @@ class RootRouter extends StatefulWidget {
 }
 
 class _RootRouterState extends State<RootRouter> {
-  bool _showDash = false;
-
-  Future<void> _open() async {
-    final t = await ErpApi.token();
-    if (!mounted) return;
-    if (t != null) {
-      setState(() => _showDash = true);
-      return;
-    }
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (ctx) => OwnerLoginPage(
-          onSuccess: () {
-            Navigator.of(ctx).pop();
-            setState(() => _showDash = true);
-          },
-        ),
-      ),
-    );
-  }
+  bool _loading = true;
+  bool _chat = false;
+  ErpSession? _s;
 
   @override
-  Widget build(BuildContext context) {
-    if (_showDash) {
-      return OwnerDashboardPage(
-        onBack: () => setState(() => _showDash = false),
-        onLogout: () => setState(() => _showDash = false),
-      );
-    }
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final s = await ErpApi.session();
+    if (!mounted) return;
+    setState(() {
+      _s = s;
+      _loading = false;
+      _chat = false;
+    });
+  }
+
+  void _openChat() => setState(() => _chat = true);
+
+  void _signedOut() => setState(() {
+        _s = null;
+        _chat = false;
+      });
+
+  Widget _chatView() {
     return Stack(
       children: [
         const AuthGate(),
@@ -53,7 +56,7 @@ class _RootRouterState extends State<RootRouter> {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(22),
-              onTap: _open,
+              onTap: () => setState(() => _chat = false),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
@@ -61,12 +64,12 @@ class _RootRouterState extends State<RootRouter> {
                   gradient: const LinearGradient(colors: [Color(0xFF1D4ED8), Color(0xFF38BDF8)]),
                   boxShadow: const [BoxShadow(color: Color(0x551D4ED8), blurRadius: 12, offset: Offset(0, 6))],
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.dashboard_rounded, color: Colors.white, size: 18),
-                    SizedBox(width: 6),
-                    Text('Owner Dashboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                    const Icon(Icons.dashboard_rounded, color: Colors.white, size: 18),
+                    const SizedBox(width: 6),
+                    Text(_s == null ? 'School sign-in' : 'Back to my screen', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
                   ],
                 ),
               ),
@@ -75,5 +78,23 @@ class _RootRouterState extends State<RootRouter> {
         ),
       ],
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_chat) return _chatView();
+    final s = _s;
+    if (s == null) return ErpLoginPage(onSignedIn: _load, onOpenChat: _openChat);
+    switch (s.role) {
+      case 'OWNER':
+        return OwnerDashboardPage(onBack: _openChat, onLogout: _signedOut);
+      case 'PARENT':
+        return ParentHomePage(name: s.name, onChat: _openChat, onLogout: _signedOut);
+      case 'TEACHER':
+        return TeacherHomePage(name: s.name, campusName: s.campusName, onChat: _openChat, onLogout: _signedOut);
+      default:
+        return RolePlaceholderPage(role: s.role, name: s.name, campusName: s.campusName, onChat: _openChat, onLogout: _signedOut);
+    }
   }
 }
