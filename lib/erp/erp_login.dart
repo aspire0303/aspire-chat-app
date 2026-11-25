@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'charts.dart' show lighten, darken;
 import 'erp_api.dart';
 
@@ -12,9 +9,8 @@ const _red = Color(0xFFDC2626);
 const _brand = Color(0xFF1D4ED8);
 
 class ErpLoginPage extends StatefulWidget {
-  const ErpLoginPage({super.key, required this.onSignedIn, required this.onOpenChat});
+  const ErpLoginPage({super.key, required this.onSignedIn});
   final VoidCallback onSignedIn;
-  final VoidCallback onOpenChat;
 
   @override
   State<ErpLoginPage> createState() => _ErpLoginPageState();
@@ -71,7 +67,6 @@ class _ErpLoginPageState extends State<ErpLoginPage> {
         });
         return;
       }
-      try { final ct = r.chatToken; if (ct != null && ct.isNotEmpty) { await FirebaseAuth.instance.signInWithCustomToken(ct); } else { await FirebaseAuth.instance.signOut(); } (await SharedPreferences.getInstance()).setBool('erp_chat_v2', true); } catch (_) {}
       widget.onSignedIn();
     } on ErpException catch (e) {
       if (mounted) {
@@ -184,11 +179,6 @@ class _ErpLoginPageState extends State<ErpLoginPage> {
                         const Center(child: Text('Your screen opens automatically for your role.', style: TextStyle(fontSize: 11, color: _muted))),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextButton(
-                    onPressed: widget.onOpenChat,
-                    child: Text('Open chat (existing sign-in)', style: TextStyle(color: Colors.white.withAlpha(235))),
                   ),
                 ],
               ),
