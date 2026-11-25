@@ -1,3 +1,4 @@
+import 'chat_launcher.dart';
 import 'package:flutter/material.dart';
 
 import 'erp_api.dart';
@@ -861,7 +862,7 @@ class TeacherQuickActions extends StatelessWidget {
                   );
                 }),
                 _card(Icons.chat_bubble_rounded, const Color(0xFF0F766E), 'Chat', 'Parents and staff', onChat),
-                _card(Icons.report_problem_rounded, _red, 'Complaints', 'See and answer', onChat),
+                _card(Icons.report_problem_rounded, _red, 'Complaints', 'See and answer', () => ChatLauncher.openComplaints(context)),
               ];
               return Wrap(spacing: 12, runSpacing: 12, children: [for (final i in items) SizedBox(width: w, child: i)]);
             },

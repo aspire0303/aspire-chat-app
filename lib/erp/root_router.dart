@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../auth_service.dart';
+import 'chat_launcher.dart';
+
 import '../main.dart' show AuthGate;
 import 'erp_api.dart';
 import 'erp_login.dart';
@@ -38,9 +41,12 @@ class _RootRouterState extends State<RootRouter> {
     });
   }
 
-  void _openChat() => setState(() => _chat = true);
+  void _openChat() => ChatLauncher.openChat(context);
+
+  void _openLoginChat() => setState(() => _chat = true);
 
   void _signedOut() => setState(() {
+        AuthService.signOut();
         _s = null;
         _chat = false;
       });
@@ -85,7 +91,7 @@ class _RootRouterState extends State<RootRouter> {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     if (_chat) return _chatView();
     final s = _s;
-    if (s == null) return ErpLoginPage(onSignedIn: _load, onOpenChat: _openChat);
+    if (s == null) return ErpLoginPage(onSignedIn: _load, onOpenChat: _openLoginChat);
     switch (s.role) {
       case 'OWNER':
         return OwnerDashboardPage(onBack: _openChat, onLogout: _signedOut);

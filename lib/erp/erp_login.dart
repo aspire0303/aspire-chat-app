@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../auth_service.dart';
+
 import 'charts.dart' show lighten, darken;
 import 'erp_api.dart';
 
@@ -68,6 +70,7 @@ class _ErpLoginPageState extends State<ErpLoginPage> {
         });
         return;
       }
+      try { if (id.contains('@')) { await AuthService.signOut(); } else if (await AuthService.signIn(id, pw) != null) { await AuthService.signOut(); } } catch (_) {}
       widget.onSignedIn();
     } on ErpException catch (e) {
       if (mounted) {
