@@ -29,8 +29,8 @@ class ErpSession {
 }
 
 class LoginResult {
-  const LoginResult({this.session, this.campuses = const []});
-  final ErpSession? session;
+  const LoginResult({this.session, this.campuses = const [], this.chatToken});
+  final ErpSession? session; final String? chatToken;
   final List<Map<String, dynamic>> campuses;
   bool get needsCampus => session == null;
 }
@@ -147,7 +147,7 @@ class ErpApi {
       campusName: '${user['campusName'] ?? ''}',
     );
     await _save(s);
-    return LoginResult(session: s);
+    return LoginResult(session: s, chatToken: body['chatToken']?.toString());
   }
 
   static Future<ErpSession> staffLogin({required String email, required String password, required String campusId}) async {

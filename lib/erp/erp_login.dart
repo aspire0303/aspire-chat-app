@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'charts.dart' show lighten, darken;
 import 'erp_api.dart';
@@ -70,7 +71,7 @@ class _ErpLoginPageState extends State<ErpLoginPage> {
         });
         return;
       }
-      try { if (id.contains('@')) { await AuthService.signOut(); } else if (await AuthService.signIn(id, pw) != null) { await AuthService.signOut(); } } catch (_) {}
+      try { final ct = r.chatToken; if (ct != null && ct.isNotEmpty) { await FirebaseAuth.instance.signInWithCustomToken(ct); } else { await FirebaseAuth.instance.signOut(); } (await SharedPreferences.getInstance()).setBool('erp_chat_v2', true); } catch (_) {}
       widget.onSignedIn();
     } on ErpException catch (e) {
       if (mounted) {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'chat_launcher.dart';
 
 import '../main.dart' show AuthGate;
@@ -32,7 +34,7 @@ class _RootRouterState extends State<RootRouter> {
   }
 
   Future<void> _load() async {
-    final s = await ErpApi.session();
+    var s = await ErpApi.session(); if (s != null) { final prefs = await SharedPreferences.getInstance(); final fu = await FirebaseAuth.instance.authStateChanges().first; if (!prefs.containsKey('erp_chat_v2') && fu == null) { await ErpApi.logout(); s = null; } }
     if (!mounted) return;
     setState(() {
       _s = s;
