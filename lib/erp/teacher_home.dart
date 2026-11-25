@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'charts.dart';
 import 'erp_api.dart';
+import 'teacher_tools.dart';
 
 const _ink = Color(0xFF0F172A);
 const _muted = Color(0xFF64748B);
@@ -80,7 +81,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
 
   Future<void> _openClass(Map<String, dynamic> c) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => TeacherClassPage(className: '${c['className']}', section: '${c['section']}')),
+      MaterialPageRoute(builder: (_) => TeacherClassHub(className: '${c['className']}', section: '${c['section']}', studentsPage: TeacherClassPage(className: '${c['className']}', section: '${c['section']}'))),
     );
     if (mounted) _load();
   }
@@ -134,7 +135,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             ),
           ),
           IconButton(tooltip: 'Refresh', onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: Colors.white)),
-          IconButton(tooltip: 'Chat', onPressed: widget.onChat, icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white)),
+          IconButton(tooltip: 'Chat and complaints', onPressed: widget.onChat, icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white)),
           IconButton(
             tooltip: 'Sign out',
             onPressed: () async {
@@ -197,9 +198,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
           },
         ),
       ),
+      TeacherQuickActions(classes: classes, onChat: widget.onChat),
       _Card(
         title: 'My classes',
-        subtitle: 'Tap a class to see its students',
+        subtitle: 'Tap a class for attendance, diary and students',
         child: classes.isEmpty
             ? const Text('No classes are assigned to you yet. Ask the admin to assign your classes.', style: TextStyle(color: _muted))
             : LayoutBuilder(
