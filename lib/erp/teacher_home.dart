@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'change_password.dart';
 import 'charts.dart';
 import 'erp_api.dart';
-import 'teacher_tools.dart';
+import 'teacher_attendance.dart';
+import 'teacher_marks.dart';
 
 const _ink = Color(0xFF0F172A);
 const _muted = Color(0xFF64748B);
@@ -81,7 +83,56 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
 
   Future<void> _openClass(Map<String, dynamic> c) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => TeacherClassHub(className: '${c['className']}', section: '${c['section']}', studentsPage: TeacherClassPage(className: '${c['className']}', section: '${c['section']}'))),
+      MaterialPageRoute(builder: (_) => TeacherClassPage(className: '${c['className']}', section: '${c['section']}')),
+    );
+    if (mounted) _load();
+  }
+
+  void _soon(String what) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$what is coming soon.')));
+  }
+
+  Future<void> _openMarks() async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TeacherMarksPage()));
+  }
+
+  Future<void> _openAttendance() async {
+    final classes = _classes;
+    if (classes.isEmpty) {
+      _soon('Attendance (no classes are assigned to you yet)');
+      return;
+    }
+    Map<String, dynamic>? pick;
+    if (classes.length == 1) {
+      pick = classes.first;
+    } else {
+      pick = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        showDragHandle: true,
+        builder: (ctx) => SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              for (final c in classes)
+                ListTile(
+                  leading: const Icon(Icons.class_rounded, color: _green),
+                  title: Text(_classTitle('${c['className']}', '${c['section']}')),
+                  subtitle: Text('${_n(c['students'])} students'),
+                  trailing: Text(
+                    c['marked'] == true ? 'Marked' : 'Not marked',
+                    style: TextStyle(color: c['marked'] == true ? _green : _amber, fontWeight: FontWeight.w700, fontSize: 12),
+                  ),
+                  onTap: () => Navigator.of(ctx).pop(c),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    final chosen = pick;
+    if (chosen == null || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => TeacherAttendancePage(className: '${chosen['className']}', section: '${chosen['section']}')),
     );
     if (mounted) _load();
   }
@@ -135,7 +186,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             ),
           ),
           IconButton(tooltip: 'Refresh', onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: Colors.white)),
-          IconButton(tooltip: 'Chat and complaints', onPressed: widget.onChat, icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white)),
+          IconButton(tooltip: 'Chat', onPressed: widget.onChat, icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white)),
+          IconButton(tooltip: 'Change password', onPressed: () => showChangePasswordDialog(context), icon: const Icon(Icons.lock_reset_rounded, color: Colors.white)),
           IconButton(
             tooltip: 'Sign out',
             onPressed: () async {
@@ -198,10 +250,35 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
           },
         ),
       ),
-      TeacherQuickActions(classes: classes, onChat: widget.onChat),
+      _Card(
+        title: 'Menu',
+        subtitle: 'Everything for your classes',
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final w = (box.maxWidth - 12) / 2;
+            final unmarked = classes.length - marked;
+            final items = <Widget>[
+              _Menu(
+                'Attendance',
+                classes.isEmpty ? 'No classes yet' : (unmarked <= 0 ? 'All marked today' : '$unmarked to mark today'),
+                Icons.fact_check_rounded,
+                _green,
+                badge: unmarked > 0 ? unmarked : 0,
+                onTap: _openAttendance,
+              ),
+              _Menu('Marks Entry', 'Enter exam marks', Icons.edit_note_rounded, _blue, onTap: _openMarks),
+              _Menu('Evaluation', 'Coming soon', Icons.rule_rounded, _purple, onTap: () => _soon('Evaluation entry')),
+              _Menu('Results', 'Coming soon', Icons.workspace_premium_rounded, _amber, onTap: () => _soon('Results')),
+              _Menu('Parent Chat', 'Coming soon', Icons.forum_rounded, _teal, onTap: () => _soon('Parent chat')),
+              _Menu('Diary', 'Coming soon', Icons.menu_book_rounded, _slate, onTap: () => _soon('Diary')),
+            ];
+            return Wrap(spacing: 12, runSpacing: 12, children: [for (final c in items) SizedBox(width: w, child: c)]);
+          },
+        ),
+      ),
       _Card(
         title: 'My classes',
-        subtitle: 'Tap a class for attendance, diary and students',
+        subtitle: 'Tap a class to see its students',
         child: classes.isEmpty
             ? const Text('No classes are assigned to you yet. Ask the admin to assign your classes.', style: TextStyle(color: _muted))
             : LayoutBuilder(
@@ -572,6 +649,61 @@ class _TeacherClassPageState extends State<TeacherClassPage> {
               for (final s in shown) _row(s),
             const SizedBox(height: 28),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Menu extends StatelessWidget {
+  const _Menu(this.label, this.sub, this.icon, this.color, {required this.onTap, this.badge = 0});
+  final String label;
+  final String sub;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final int badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [lighten(color, 0.22), color, darken(color, 0.22)]),
+          boxShadow: [BoxShadow(color: color.withAlpha(110), blurRadius: 16, offset: const Offset(0, 9))],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              Positioned(right: -16, top: -16, child: Container(width: 74, height: 74, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withAlpha(36)))),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(icon, color: Colors.white, size: 26),
+                        if (badge > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                            child: Text('$badge', style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 11)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                    Text(sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withAlpha(215), fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -29,8 +29,8 @@ class ErpSession {
 }
 
 class LoginResult {
-  const LoginResult({this.session, this.campuses = const [], this.chatToken});
-  final ErpSession? session; final String? chatToken;
+  const LoginResult({this.session, this.campuses = const []});
+  final ErpSession? session;
   final List<Map<String, dynamic>> campuses;
   bool get needsCampus => session == null;
 }
@@ -147,7 +147,7 @@ class ErpApi {
       campusName: '${user['campusName'] ?? ''}',
     );
     await _save(s);
-    return LoginResult(session: s, chatToken: body['chatToken']?.toString());
+    return LoginResult(session: s);
   }
 
   static Future<ErpSession> staffLogin({required String email, required String password, required String campusId}) async {
@@ -175,34 +175,54 @@ class ErpApi {
     await staffLogin(email: email, password: password, campusId: '__owner__');
   }
 
-  static Future<Map<String, dynamic>> ownerDashboard() => getJson('/api/mobile/owner/dashboard');
-  static Future<Map<String, dynamic>> teacherHome() => getJson('/api/mobile/teacher/home');
-  static Future<Map<String, dynamic>> teacherStudents(String className, String section) =>
-      getJson('/api/mobile/teacher/students?class=${Uri.encodeQueryComponent(className)}&section=${Uri.encodeQueryComponent(section)}');
-
-  static Future<Map<String, dynamic>> postAuth(String path, Map<String, dynamic> body) async {
+  static Future<Map<String, dynamic>> postJson(String path, Map<String, dynamic> body) async {
     final t = await token();
     if (t == null) throw ErpException('Please sign in.', unauthorized: true);
     try {
       final r = await http
-          .post(Uri.parse('$erpBaseUrl$path'), headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $t'}, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 60));
+          .post(
+            Uri.parse('$erpBaseUrl$path'),
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $t'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 40));
       return _decode(r);
     } on ErpException {
       rethrow;
     } catch (_) {
-      throw ErpException('Cannot reach the school server. Try again.');
+      throw ErpException(_unreachable);
     }
+  }
+
+  static Future<void> changePassword(String currentPassword, String newPassword) async {
+    await postJson('/api/mobile/change-password', {'currentPassword': currentPassword, 'newPassword': newPassword});
   }
 
   static Future<Map<String, dynamic>> teacherAttendance(String className, String section) =>
       getJson('/api/mobile/teacher/attendance?class=${Uri.encodeQueryComponent(className)}&section=${Uri.encodeQueryComponent(section)}');
+
   static Future<Map<String, dynamic>> saveTeacherAttendance(String className, String section, Map<String, dynamic> entries) =>
-      postAuth('/api/mobile/teacher/attendance', {'className': className, 'section': section, 'entries': entries});
-  static Future<Map<String, dynamic>> teacherDiary(String className, String section, String date) =>
-      getJson('/api/mobile/teacher/diary?class=${Uri.encodeQueryComponent(className)}&section=${Uri.encodeQueryComponent(section)}&date=$date');
-  static Future<Map<String, dynamic>> teacherDiarySave(Map<String, dynamic> entry) =>
-      postAuth('/api/mobile/teacher/diary', {'op': 'save', 'entry': entry});
-  static Future<Map<String, dynamic>> teacherDiaryDelete(String id) =>
-      postAuth('/api/mobile/teacher/diary', {'op': 'delete', 'id': id});
+      postJson('/api/mobile/teacher/attendance', {'className': className, 'section': section, 'entries': entries});
+
+  static Future<Map<String, dynamic>> marksExams() => getJson('/api/mobile/teacher/marks');
+
+  static Future<Map<String, dynamic>> marksSubjects(String examId, String cls) =>
+      getJson('/api/mobile/teacher/marks?examId=${Uri.encodeQueryComponent(examId)}&cls=${Uri.encodeQueryComponent(cls)}');
+
+  static Future<Map<String, dynamic>> marksSheet(String examId, String cls, String subject) => getJson(
+      '/api/mobile/teacher/marks?examId=${Uri.encodeQueryComponent(examId)}&cls=${Uri.encodeQueryComponent(cls)}&subject=${Uri.encodeQueryComponent(subject)}');
+
+  static Future<Map<String, dynamic>> saveMarks({
+    required String examId,
+    required String className,
+    required String subject,
+    required double total,
+    required List<Map<String, dynamic>> rows,
+  }) =>
+      postJson('/api/mobile/teacher/marks', {'examId': examId, 'className': className, 'subject': subject, 'total': total, 'rows': rows});
+
+  static Future<Map<String, dynamic>> ownerDashboard() => getJson('/api/mobile/owner/dashboard');
+  static Future<Map<String, dynamic>> teacherHome() => getJson('/api/mobile/teacher/home');
+  static Future<Map<String, dynamic>> teacherStudents(String className, String section) =>
+      getJson('/api/mobile/teacher/students?class=${Uri.encodeQueryComponent(className)}&section=${Uri.encodeQueryComponent(section)}');
 }

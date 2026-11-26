@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'change_password.dart';
 import 'charts.dart';
 import 'erp_api.dart';
 import 'parent_attendance.dart';
@@ -226,6 +227,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
               actions: [
                 IconButton(tooltip: 'Refresh', onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: Colors.white)),
                 IconButton(tooltip: 'Chat', onPressed: widget.onChat, icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white)),
+                IconButton(tooltip: 'Change password', onPressed: () => showChangePasswordDialog(context), icon: const Icon(Icons.lock_reset_rounded, color: Colors.white)),
                 IconButton(
                   tooltip: 'Sign out',
                   onPressed: () async {
