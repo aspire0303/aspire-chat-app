@@ -100,7 +100,27 @@ class ErpApi {
     }
   }
 
-  static Future<Map<String, dynamic>> getJson(String path) async {
+  static Future<Map<String, dynamic>> postAuth(String path, Map<String, dynamic> body) async {
+    final t = await token();
+    if (t == null) throw ErpException('Please sign in.', unauthorized: true);
+    try {
+      final r = await http
+          .post(Uri.parse('$erpBaseUrl$path'), headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $t'}, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 60));
+      return _decode(r);
+    } on ErpException {
+      rethrow;
+    } catch (_) {
+      throw ErpException('Cannot reach the school server. Try again.');
+    }
+  }
+  static Future<Map<String, dynamic>> teacherDiary(String className, String section, String date) =>
+      getJson('/api/mobile/teacher/diary?class=${Uri.encodeQueryComponent(className)}&section=${Uri.encodeQueryComponent(section)}&date=$date');
+  static Future<Map<String, dynamic>> teacherDiarySave(Map<String, dynamic> entry) =>
+      postAuth('/api/mobile/teacher/diary', {'op': 'save', 'entry': entry});
+  static Future<Map<String, dynamic>> teacherDiaryDelete(String id) =>
+      postAuth('/api/mobile/teacher/diary', {'op': 'delete', 'id': id});
+static Future<Map<String, dynamic>> getJson(String path) async {
     final t = await token();
     if (t == null) throw ErpException('Please sign in.', unauthorized: true);
     try {
