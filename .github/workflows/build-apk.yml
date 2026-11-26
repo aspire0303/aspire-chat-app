@@ -38,6 +38,7 @@ jobs:
             sed -i "s/applicationId = \"[^\"]*\"/applicationId = \"$PKG\"/; s/applicationId \"[^\"]*\"/applicationId \"$PKG\"/" "$G"
           fi
           grep -q "android.permission.INTERNET" "$M" || sed -i '0,/<application/s//<uses-permission android:name="android.permission.INTERNET"\/>\n    <application/' "$M"
+          grep -q "android.permission.POST_NOTIFICATIONS" "$M" || sed -i '0,/<application/s//<uses-permission android:name="android.permission.POST_NOTIFICATIONS"\/>\n    <application/' "$M"
           sed -i 's/android:label="[^"]*"/android:label="Aspire Chat"/' "$M"
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/; s/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' "$G"
           echo "--- applicationId / minSdk"; grep -n "applicationId\|minSdk" "$G" || true

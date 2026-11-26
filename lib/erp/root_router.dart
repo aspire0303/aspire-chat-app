@@ -7,6 +7,7 @@ import 'owner_dashboard.dart';
 import 'parent_home.dart';
 import 'role_placeholder.dart';
 import 'teacher_home.dart';
+import 'push.dart';
 
 // Front door of the app: the ERP sign-in decides which screen opens.
 class RootRouter extends StatefulWidget {
@@ -33,6 +34,14 @@ class _RootRouterState extends State<RootRouter> {
       _s = s;
       _loading = false;
     });
+    if (s != null) PushService.start(onMessage: _pushToast);
+  }
+
+  void _pushToast(String title, String body) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(body.isEmpty ? title : '$title: $body'), duration: const Duration(seconds: 4)),
+    );
   }
 
   void _openChat() => ChatLauncher.openChat(context);

@@ -11,3 +11,6 @@ key.properties
 *.jks
 *.keystore
 serviceAccountKey.json
+
+google-services.json
+*.bak*
