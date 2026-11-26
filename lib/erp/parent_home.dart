@@ -4,6 +4,9 @@ import 'change_password.dart';
 import 'charts.dart';
 import 'erp_api.dart';
 import 'parent_attendance.dart';
+import 'parent_diary.dart';
+import 'parent_fees.dart';
+import 'parent_results.dart';
 import 'parent_common.dart';
 import 'parent_notices.dart';
 
@@ -104,6 +107,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
     _loadAtt();
   }
 
+  // ignore: unused_element
   void _soon(String what) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$what is coming soon.')));
   }
@@ -191,17 +195,17 @@ class _ParentHomePageState extends State<ParentHomePage> {
       ),
       _Card(
         title: 'Menu',
-        subtitle: 'For ${k['name']}',
+        subtitle: ('${k['classTeacher'] ?? ''}'.isEmpty ? 'For ${k['name']}' : 'For ${k['name']} - Teacher: ${k['classTeacher']}'),
         child: LayoutBuilder(
           builder: (context, box) {
             final w = (box.maxWidth - 12) / 2;
             final items = <Widget>[
               _Menu('Attendance', 'Calendar and counts', Icons.fact_check_rounded, _green, onTap: () => _openAttendance(k)),
               _Menu('Notices', _unread > 0 ? '$_unread unread' : 'From the school', Icons.notifications_rounded, _blue, badge: _unread, onTap: _openNotices),
-              _Menu('Fees', 'Coming soon', Icons.payments_rounded, _amber, onTap: () => _soon('Fees')),
-              _Menu('Results', 'Coming soon', Icons.workspace_premium_rounded, _purple, onTap: () => _soon('Results')),
-              _Menu('Chat', 'Coming soon', Icons.forum_rounded, _teal, onTap: () => _soon('Chat with teachers')),
-              _Menu('Diary', 'Coming soon', Icons.menu_book_rounded, _slate, onTap: () => _soon('Diary')),
+              _Menu('Fees', 'Balance and payments', Icons.payments_rounded, _amber, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ParentFeesPage(studentId: '${k['id']}', studentName: '${k['name']}')))),
+              _Menu('Results', 'Published exams', Icons.workspace_premium_rounded, _purple, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ParentResultsPage(studentId: '${k['id']}', studentName: '${k['name']}')))),
+              _Menu('Chat', 'Message the school', Icons.forum_rounded, _teal, onTap: widget.onChat),
+              _Menu('Diary', 'Homework and classwork', Icons.menu_book_rounded, _slate, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ParentDiaryPage(studentId: '${k['id']}', studentName: '${k['name']}')))),
             ];
             return Wrap(spacing: 12, runSpacing: 12, children: [for (final c in items) SizedBox(width: w, child: c)]);
           },
