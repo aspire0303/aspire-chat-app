@@ -290,7 +290,7 @@ class _Stat extends StatelessWidget {
                   ),
                   Text(label, style: TextStyle(color: Colors.white.withAlpha(230), fontSize: 12, fontWeight: FontWeight.w600)),
                   if (sub != null && sub!.isNotEmpty)
-                    Text(sub!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withAlpha(190), fontSize: 10)),
+                    Text(sub!, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withAlpha(190), fontSize: 10)),
                 ],
               ),
             ),

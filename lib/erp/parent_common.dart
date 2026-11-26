@@ -39,7 +39,7 @@ class ParentHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                    Text(title, maxLines: 3, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
                     if (subtitle != null) Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withAlpha(215), fontSize: 12)),
                   ],
                 ),

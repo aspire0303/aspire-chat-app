@@ -5,6 +5,9 @@ import 'charts.dart';
 import 'erp_api.dart';
 import 'teacher_attendance.dart';
 import 'teacher_marks.dart';
+import 'teacher_evaluation.dart';
+import 'teacher_results.dart';
+import 'teacher_tools.dart' show TeacherDiaryPage;
 
 const _ink = Color(0xFF0F172A);
 const _muted = Color(0xFF64748B);
@@ -90,6 +93,42 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
 
   void _soon(String what) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$what is coming soon.')));
+  }
+
+  Future<void> _openDiary() async {
+    final classes = _classes;
+    if (classes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No classes are assigned to you yet.')));
+      return;
+    }
+    Map<String, dynamic>? pick;
+    if (classes.length == 1) {
+      pick = classes.first;
+    } else {
+      pick = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        showDragHandle: true,
+        builder: (ctx) => SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              for (final c in classes)
+                ListTile(
+                  leading: const Icon(Icons.menu_book_rounded, color: _slate),
+                  title: Text(_classTitle('${c['className']}', '${c['section']}')),
+                  subtitle: Text('${_n(c['students'])} students'),
+                  onTap: () => Navigator.of(ctx).pop(c),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    final chosen = pick;
+    if (chosen == null || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => TeacherDiaryPage(className: '${chosen['className']}', section: '${chosen['section']}')),
+    );
   }
 
   Future<void> _openMarks() async {
@@ -180,7 +219,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Welcome, $name', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                Text('Welcome, $name', maxLines: 3, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
                 Text('$campus  ·  ${_data?['today'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withAlpha(215), fontSize: 12)),
               ],
             ),
@@ -267,10 +306,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                 onTap: _openAttendance,
               ),
               _Menu('Marks Entry', 'Enter exam marks', Icons.edit_note_rounded, _blue, onTap: _openMarks),
-              _Menu('Evaluation', 'Coming soon', Icons.rule_rounded, _purple, onTap: () => _soon('Evaluation entry')),
-              _Menu('Results', 'Coming soon', Icons.workspace_premium_rounded, _amber, onTap: () => _soon('Results')),
-              _Menu('Parent Chat', 'Coming soon', Icons.forum_rounded, _teal, onTap: () => _soon('Parent chat')),
-              _Menu('Diary', 'Coming soon', Icons.menu_book_rounded, _slate, onTap: () => _soon('Diary')),
+              _Menu('Evaluation', 'Enter evaluation marks', Icons.rule_rounded, _purple, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TeacherEvaluationPage()))),
+              _Menu('Results', 'Class results', Icons.workspace_premium_rounded, _amber, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TeacherResultsPage()))),
+              _Menu('Parent Chat', 'Message parents', Icons.forum_rounded, _teal, onTap: widget.onChat),
+              _Menu('Diary', 'Homework and classwork', Icons.menu_book_rounded, _slate, onTap: _openDiary),
             ];
             return Wrap(spacing: 12, runSpacing: 12, children: [for (final c in items) SizedBox(width: w, child: c)]);
           },
